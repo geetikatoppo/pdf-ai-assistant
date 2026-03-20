@@ -1,5 +1,4 @@
 import os
-import requests
 import numpy as np
 import faiss
 
@@ -8,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pypdf import PdfReader
 from sentence_transformers import SentenceTransformer
+from openai import OpenAI
 
 app = FastAPI()
 
@@ -19,12 +19,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Groq client
+client = OpenAI(
+    api_key=os.getenv("GROQ_API_KEY"),
+    base_url="https://api.groq.com/openai/v1",
+)
+
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+# In-memory storage for MVP
 chunks_store = []
 faiss_index = None
 
+# Embedding model
 embed_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
@@ -97,17 +105,15 @@ Question:
 Answer in simple clear language.
 """
 
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": "llama3",
-            "prompt": prompt,
-            "stream": False
-        },
-        timeout=120
+    completion = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.2,
     )
 
-    return response.json()["response"]
+    return completion.choices[0].message.content
 
 
 @app.get("/")

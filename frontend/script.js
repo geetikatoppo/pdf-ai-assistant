@@ -13,7 +13,7 @@ async function uploadPDF() {
     status.innerText = "Uploading and indexing PDF...";
 
     try {
-        const response = await fetch("http://127.0.0.1:8000/upload-pdf", {
+        const response = await fetch("http://127.0.0.1:8001/upload-pdf", {
             method: "POST",
             body: formData
         });
@@ -42,7 +42,7 @@ async function askQuestion() {
     answerBox.innerHTML = "<p>Thinking...</p>";
 
     try {
-        const response = await fetch("http://127.0.0.1:8000/ask", {
+        const response = await fetch("http://127.0.0.1:8001/ask", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
