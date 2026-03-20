@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>AI PDF Assistant</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>AI PDF Assistant</h1>
+
+    <div class="card">
+      <h2>Upload PDF</h2>
+      <input type="file" id="pdfFile" accept=".pdf" />
+      <button onclick="uploadPDF()">Upload</button>
+      <p id="uploadStatus"></p>
+    </div>
+
+    <div class="card">
+      <h2>Ask Question</h2>
+      <input type="text" id="question" placeholder="Ask something about the PDF" />
+      <button onclick="askQuestion()">Ask</button>
+      <div id="answerBox"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
