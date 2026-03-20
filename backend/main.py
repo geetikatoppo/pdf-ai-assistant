@@ -33,7 +33,13 @@ chunks_store = []
 faiss_index = None
 
 # Embedding model
-embed_model = SentenceTransformer("all-MiniLM-L6-v2")
+embed_model = None
+
+def get_embed_model():
+    global embed_model
+    if embed_model is None:
+        embed_model = SentenceTransformer("all-MiniLM-L6-v2")
+    return embed_model
 
 
 class QueryRequest(BaseModel):
