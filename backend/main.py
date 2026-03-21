@@ -1,12 +1,11 @@
 import os
+import re
 import numpy as np
-import faiss
 
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pypdf import PdfReader
-from sentence_transformers import SentenceTransformer
 from openai import OpenAI
 
 app = FastAPI()
@@ -19,7 +18,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Groq client
 client = OpenAI(
     api_key=os.getenv("GROQ_API_KEY"),
     base_url="https://api.groq.com/openai/v1",
@@ -28,18 +26,7 @@ client = OpenAI(
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# In-memory storage for MVP
 chunks_store = []
-faiss_index = None
-
-# Embedding model
-embed_model = None
-
-def get_embed_model():
-    global embed_model
-    if embed_model is None:
-        embed_model = SentenceTransformer("all-MiniLM-L6-v2")
-    return embed_model
 
 
 class QueryRequest(BaseModel):
@@ -56,42 +43,41 @@ def extract_text_from_pdf(pdf_path: str) -> str:
     return text
 
 
-def split_text(text: str, chunk_size: int = 500, overlap: int = 100):
+def split_text(text: str, chunk_size: int = 1200, overlap: int = 200):
     chunks = []
     start = 0
     while start < len(text):
         end = start + chunk_size
-        chunk = text[start:end]
-        chunks.append(chunk)
+        chunks.append(text[start:end])
         start += chunk_size - overlap
     return chunks
 
 
-def build_faiss_index(chunks):
-    global faiss_index, chunks_store
+def tokenize(text: str):
+    return re.findall(r"\b\w+\b", text.lower())
 
-    chunks_store = chunks
-    embeddings = embed_model.encode(chunks, convert_to_numpy=True)
 
-    dimension = embeddings.shape[1]
-    faiss_index = faiss.IndexFlatL2(dimension)
-    faiss_index.add(embeddings.astype("float32"))
+def score_chunk(question: str, chunk: str) -> int:
+    q_words = set(tokenize(question))
+    c_words = set(tokenize(chunk))
+    return len(q_words.intersection(c_words))
 
 
 def retrieve_relevant_chunks(question: str, top_k: int = 3):
-    global faiss_index, chunks_store
+    global chunks_store
 
-    if faiss_index is None or not chunks_store:
+    if not chunks_store:
         return []
 
-    query_embedding = embed_model.encode([question], convert_to_numpy=True).astype("float32")
-    distances, indices = faiss_index.search(query_embedding, top_k)
+    scored = [(score_chunk(question, chunk), chunk) for chunk in chunks_store]
+    scored.sort(key=lambda x: x[0], reverse=True)
 
-    results = []
-    for idx in indices[0]:
-        if 0 <= idx < len(chunks_store):
-            results.append(chunks_store[idx])
-    return results
+    top_chunks = [chunk for score, chunk in scored[:top_k] if score > 0]
+
+    if not top_chunks:
+        top_chunks = chunks_store[:top_k]
+
+    return top_chunks
 
 
 def ask_llama(question: str, context_chunks):
@@ -113,9 +99,7 @@ Answer in simple clear language.
 
     completion = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "user", "content": prompt}
-        ],
+        messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
     )
 
@@ -129,6 +113,8 @@ def home():
 
 @app.post("/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...)):
+    global chunks_store
+
     if not file.filename.lower().endswith(".pdf"):
         return {"error": "Please upload a PDF file"}
 
@@ -142,13 +128,12 @@ async def upload_pdf(file: UploadFile = File(...)):
     if not text.strip():
         return {"error": "No readable text found in PDF"}
 
-    chunks = split_text(text)
-    build_faiss_index(chunks)
+    chunks_store = split_text(text)
 
     return {
         "message": "PDF uploaded and indexed successfully",
         "filename": file.filename,
-        "chunks": len(chunks)
+        "chunks": len(chunks_store)
     }
 
 
