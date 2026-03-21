@@ -1,3 +1,5 @@
+const BASE_URL = "https://pdf-ai-assistant-production.up.railway.app";
+
 async function uploadPDF() {
     const fileInput = document.getElementById("pdfFile");
     const status = document.getElementById("uploadStatus");
@@ -13,7 +15,7 @@ async function uploadPDF() {
     status.innerText = "Uploading and indexing PDF...";
 
     try {
-        const response = await fetch("http://127.0.0.1:8001/upload-pdf", {
+        const response = await fetch(`${BASE_URL}/upload-pdf`, {
             method: "POST",
             body: formData
         });
@@ -42,7 +44,7 @@ async function askQuestion() {
     answerBox.innerHTML = "<p>Thinking...</p>";
 
     try {
-        const response = await fetch("http://127.0.0.1:8001/ask", {
+        const response = await fetch(`${BASE_URL}/ask`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
