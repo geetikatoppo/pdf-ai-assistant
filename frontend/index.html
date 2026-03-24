@@ -30,24 +30,25 @@
     </div>
 
     <!-- Ask Section -->
-    <div class="bg-white shadow-lg rounded-2xl p-6">
-      <h2 class="text-xl font-semibold mb-4">Ask Question</h2>
+  <!-- Chat Section -->
+<div class="bg-white shadow-lg rounded-2xl p-6">
+  <h2 class="text-xl font-semibold mb-4">Chat with PDF</h2>
 
-      <div class="flex gap-2">
-        <input id="question" 
-          class="flex-1 border rounded-lg p-2"
-          placeholder="Ask something about your PDF...">
+  <!-- Chat Box -->
+  <div id="chatBox" class="h-80 overflow-y-auto bg-gray-100 rounded-lg p-3 space-y-2 mb-4"></div>
 
-        <button onclick="askQuestion()" 
-          class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">
-          Ask
-        </button>
-      </div>
+  <!-- Input -->
+  <div class="flex gap-2">
+    <input id="question" 
+      class="flex-1 border rounded-lg p-2"
+      placeholder="Ask something...">
 
-      <div id="responseBox" 
-        class="mt-4 p-4 bg-gray-100 rounded-lg hidden">
-      </div>
-    </div>
+    <button onclick="askQuestion()" 
+      class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">
+      Send
+    </button>
+  </div>
+</div>
 
   </div>
 
@@ -69,22 +70,59 @@
     }
 
     async function askQuestion() {
-      const question = document.getElementById("question").value;
+  const questionInput = document.getElementById("question");
+  const chatBox = document.getElementById("chatBox");
 
-      const res = await fetch("http://127.0.0.1:8001/ask", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ question })
-      });
+  const question = questionInput.value.trim();
+  if (!question) return;
 
-      const data = await res.json();
+  // User message
+  chatBox.innerHTML += `
+    <div style="text-align:right;">
+      <span style="background:#3b82f6;color:white;padding:8px 12px;border-radius:10px;">
+        ${question}
+      </span>
+    </div>
+  `;
 
-      const box = document.getElementById("responseBox");
-      box.classList.remove("hidden");
-      box.innerText = data.answer;
-    }
+  questionInput.value = "";
+
+  // Loading
+  chatBox.innerHTML += `
+    <div id="loading">Thinking...</div>
+  `;
+
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  try {
+    const res = await fetch("http://127.0.0.1:8001/ask", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ question })
+    });
+
+    const data = await res.json();
+
+    document.getElementById("loading").remove();
+
+    // AI response
+    chatBox.innerHTML += `
+      <div style="text-align:left;">
+        <span style="background:#e5e7eb;padding:8px 12px;border-radius:10px;">
+          ${data.answer}
+        </span>
+      </div>
+    `;
+
+  } catch (error) {
+    document.getElementById("loading").innerText = "Error...";
+  }
+
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+    
   </script>
 
 </body>
