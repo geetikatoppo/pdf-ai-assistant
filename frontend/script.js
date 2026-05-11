@@ -1,64 +1,79 @@
-const BASE_URL = "https://pdf-ai-backend1.onrender.com";
+<script>
+  const BASE_URL = "https://pdf-ai-backend1.onrender.com";
 
-async function uploadPDF() {
+  async function uploadPDF() {
     const fileInput = document.getElementById("pdfFile");
     const status = document.getElementById("uploadStatus");
 
     if (!fileInput.files.length) {
-        status.innerText = "Please choose a PDF file.";
-        return;
+      status.innerText = "Please choose a PDF file.";
+      return;
     }
 
     const formData = new FormData();
     formData.append("file", fileInput.files[0]);
 
-    status.innerText = "Uploading and indexing PDF...";
+    status.innerText = "Uploading...";
 
     try {
-        const response = await fetch(`${BASE_URL}/upload-pdf`, {
-            method: "POST",
-            body: formData
-        });
+      const res = await fetch(`${BASE_URL}/upload-pdf`, {
+        method: "POST",
+        body: formData
+      });
 
-        const data = await response.json();
-
-        if (data.error) {
-            status.innerText = data.error;
-        } else {
-            status.innerText = `${data.message} | Chunks: ${data.chunks}`;
-        }
+      const data = await res.json();
+      status.innerText = data.message || "PDF uploaded successfully!";
     } catch (error) {
-        status.innerText = "Error uploading PDF.";
+      status.innerText = "Upload failed. Please try again.";
+      console.error(error);
     }
-}
+  }
 
-async function askQuestion() {
-    const question = document.getElementById("question").value.trim();
-    const answerBox = document.getElementById("answerBox");
+  async function askQuestion() {
+    const questionInput = document.getElementById("question");
+    const chatBox = document.getElementById("chatBox");
 
-    if (!question) {
-        answerBox.innerHTML = "<p>Please enter a question.</p>";
-        return;
-    }
+    const question = questionInput.value.trim();
+    if (!question) return;
 
-    answerBox.innerHTML = "<p>Thinking...</p>";
+    chatBox.innerHTML += `
+      <div style="text-align:right;">
+        <span style="background:#3b82f6;color:white;padding:8px 12px;border-radius:10px;display:inline-block;">
+          ${question}
+        </span>
+      </div>
+    `;
+
+    questionInput.value = "";
+
+    chatBox.innerHTML += `<div id="loading">Thinking...</div>`;
+    chatBox.scrollTop = chatBox.scrollHeight;
 
     try {
-        const response = await fetch(`${BASE_URL}/ask`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ question: question })
-        });
+      const res = await fetch(`${BASE_URL}/ask`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ question: question })
+      });
 
-        const data = await response.json();
+      const data = await res.json();
 
-        answerBox.innerHTML = `
-            <h3>Answer</h3>
-            <p>${data.answer}</p>
-        `;
+      document.getElementById("loading").remove();
+
+      chatBox.innerHTML += `
+        <div style="text-align:left;">
+          <span style="background:#e5e7eb;padding:8px 12px;border-radius:10px;display:inline-block;">
+            ${data.answer}
+          </span>
+        </div>
+      `;
     } catch (error) {
-        answerBox.innerHTML = "<p>Error getting answer.</p>";
+      document.getElementById("loading").innerText = "Error...";
+      console.error(error);
     }
-}
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+</script>
