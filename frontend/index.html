@@ -60,7 +60,7 @@
 
       document.getElementById("uploadStatus").innerText = "Uploading...";
 
-      const res = await fetch("http://127.0.0.1:8001/upload-pdf", {
+      fetch("https://your-backend-name.up.railway.app/upload-pdf", {
         method: "POST",
         body: formData
       });
@@ -95,7 +95,7 @@
   chatBox.scrollTop = chatBox.scrollHeight;
 
   try {
-    const res = await fetch("http://127.0.0.1:8001/ask", {
+    fetch("https://your-backend-name.up.railway.app/ask", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

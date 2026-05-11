@@ -1,4 +1,4 @@
-const BASE_URL = "https://pdf-ai-assistant-production.up.railway.app";
+const BASE_URL = "https://pdf-ai-backend1.onrender.com";
 
 async function uploadPDF() {
     const fileInput = document.getElementById("pdfFile");
