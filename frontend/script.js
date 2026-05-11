@@ -98,4 +98,3 @@ async function askQuestion() {
 
   chatBox.scrollTop = chatBox.scrollHeight;
 }
-</script>
